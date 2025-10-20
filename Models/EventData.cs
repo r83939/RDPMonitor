@@ -17,7 +17,8 @@ namespace RdpMonitor.Models
             var eventData = new EventData
             {
                 Time = entry.TimeGenerated,
-                EventType = "RDP Login"
+                EventType = "RDP Login",
+                Workstation = entry.MachineName
             };
 
             // Парсим информацию из сообщения события
@@ -30,41 +31,114 @@ namespace RdpMonitor.Models
         {
             try
             {
-                string[] lines = message.Split('\n');
+                // Разделяем сообщение на строки
+                string[] lines = message.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                
                 foreach (string line in lines)
                 {
-                    if (line.Contains("Имя пользователя:") || line.Contains("User Name:"))
+                    string trimmedLine = line.Trim();
+                    
+                    // Ищем имя пользователя (разные варианты для разных языков)
+                    if (trimmedLine.StartsWith("Имя пользователя:") || 
+                        trimmedLine.StartsWith("User Name:") ||
+                        trimmedLine.StartsWith("Account Name:") ||
+                        trimmedLine.Contains("Account Name:"))
                     {
-                        eventData.UserName = line.Split(':')[1].Trim();
+                        eventData.UserName = ExtractValue(line);
                     }
-                    else if (line.Contains("Домен:") || line.Contains("Domain:"))
+                    // Ищем домен
+                    else if (trimmedLine.StartsWith("Домен:") || 
+                             trimmedLine.StartsWith("Domain:") ||
+                             trimmedLine.StartsWith("Account Domain:") ||
+                             trimmedLine.Contains("Account Domain:"))
                     {
-                        eventData.Domain = line.Split(':')[1].Trim();
+                        eventData.Domain = ExtractValue(line);
                     }
-                    else if (line.Contains("Workstation Name:") || line.Contains("Имя рабочей станции:"))
+                    // Ищем рабочую станцию
+                    else if (trimmedLine.StartsWith("Workstation Name:") || 
+                             trimmedLine.StartsWith("Имя рабочей станции:") ||
+                             trimmedLine.Contains("Workstation Name:"))
                     {
-                        eventData.Workstation = line.Split(':')[1].Trim();
+                        eventData.Workstation = ExtractValue(line);
                     }
-                    else if (line.Contains("Адрес сети:") || line.Contains("Network Address:"))
+                    // Ищем IP адрес (разные варианты)
+                    else if (trimmedLine.StartsWith("Адрес сети:") || 
+                             trimmedLine.StartsWith("Network Address:") ||
+                             trimmedLine.StartsWith("Source Network Address:") ||
+                             trimmedLine.Contains("Source Network Address:") ||
+                             trimmedLine.StartsWith("IP Address:") ||
+                             trimmedLine.Contains("IP Address:"))
                     {
-                        eventData.IpAddress = line.Split(':')[1].Trim();
+                        eventData.IpAddress = ExtractValue(line);
                     }
+                    // Альтернативный поиск IP через ключевые слова
+                    else if (trimmedLine.Contains("Source Network Address:") || trimmedLine.Contains("Network Address:"))
+                    {
+                        eventData.IpAddress = ExtractValue(line);
+                    }
+                }
+
+                // Если IP не найден, попробуем найти в формате IPv4
+                if (eventData.IpAddress == "N/A" || string.IsNullOrEmpty(eventData.IpAddress))
+                {
+                    eventData.IpAddress = FindIpAddressInText(message);
                 }
             }
             catch (Exception ex)
             {
-                // Используем прямое логирование вместо статического метода
+                // Логируем ошибку для отладки
                 try
                 {
-                    string logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log.txt");
-                    string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [EVENTDATA] Ошибка парсинга сообщения события: {ex.Message}";
-                    File.AppendAllText(logFile, logEntry + Environment.NewLine);
+                    string logFile = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log.txt");
+                    string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [EVENTDATA] Ошибка парсинга: {ex.Message}";
+                    System.IO.File.AppendAllText(logFile, logEntry + Environment.NewLine);
                 }
                 catch
                 {
                     // Игнорируем ошибки логирования
                 }
             }
+        }
+
+        private static string ExtractValue(string line)
+        {
+            try
+            {
+                // Разделяем строку по двоеточию и берем вторую часть
+                string[] parts = line.Split(':', 2);
+                if (parts.Length >= 2)
+                {
+                    return parts[1].Trim();
+                }
+                return "N/A";
+            }
+            catch
+            {
+                return "N/A";
+            }
+        }
+
+        private static string FindIpAddressInText(string text)
+        {
+            try
+            {
+                // Ищем IPv4 адрес в тексте
+                var ipMatch = System.Text.RegularExpressions.Regex.Match(
+                    text, 
+                    @"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
+                );
+                
+                if (ipMatch.Success && ipMatch.Value != "0.0.0.0")
+                {
+                    return ipMatch.Value;
+                }
+            }
+            catch
+            {
+                // Игнорируем ошибки
+            }
+            
+            return "N/A";
         }
 
         public override string ToString()

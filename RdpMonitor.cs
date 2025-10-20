@@ -74,6 +74,34 @@ namespace RdpMonitor
         }
 
         private void ProcessRdpLoginEvent(EventLogEntry entry)
+{
+    try
+    {
+        // Улучшенная сигнатура для дедупликации - используем время с точностью до секунды
+        string eventSignature = $"{entry.TimeGenerated:yyyyMMddHHmmss}_{entry.InstanceId}";
+        
+        if (_processedEvents!.Contains(eventSignature))
+            return;
+
+        _processedEvents.Add(eventSignature);
+
+        // Извлекаем данные через EventData
+        var eventData = Models.EventData.FromEventLogEntry(entry);
+        
+        string message = $"🔐 Новый RDP вход:\n" +
+                       $"🕐 Время: {eventData.Time:dd.MM.yyyy HH:mm:ss}\n" +
+                       $"👤 Пользователь: {eventData.UserName}\n" +
+                       $"💻 Компьютер: {eventData.Workstation}\n" +
+                       $"📍 IP адрес: {eventData.IpAddress}";
+
+        _telegramBot!.SendMessage(message);
+        LogMessage($"Отправлено уведомление о RDP входе: {eventData.UserName} с IP: {eventData.IpAddress}");
+    }
+    catch (Exception ex)
+    {
+        LogMessage($"Ошибка обработки события RDP: {ex.Message}");
+    }
+}
         {
             try
             {

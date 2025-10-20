@@ -8,8 +8,8 @@ namespace RdpMonitor
 {
     public class RdpMonitorService : ServiceBase
     {
-        private RdpMonitorServiceLogic _serviceLogic;
-        private Thread _serviceThread;
+        private RdpMonitorServiceLogic? _serviceLogic;
+        private Thread? _serviceThread;
 
         public RdpMonitorService()
         {
