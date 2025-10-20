@@ -74,52 +74,31 @@ namespace RdpMonitor
         }
 
         private void ProcessRdpLoginEvent(EventLogEntry entry)
-{
-    try
-    {
-        // Улучшенная сигнатура для дедупликации - используем время с точностью до секунды
-        string eventSignature = $"{entry.TimeGenerated:yyyyMMddHHmmss}_{entry.InstanceId}";
-        
-        if (_processedEvents!.Contains(eventSignature))
-            return;
-
-        _processedEvents.Add(eventSignature);
-
-        // Извлекаем данные через EventData
-        var eventData = Models.EventData.FromEventLogEntry(entry);
-        
-        string message = $"🔐 Новый RDP вход:\n" +
-                       $"🕐 Время: {eventData.Time:dd.MM.yyyy HH:mm:ss}\n" +
-                       $"👤 Пользователь: {eventData.UserName}\n" +
-                       $"💻 Компьютер: {eventData.Workstation}\n" +
-                       $"📍 IP адрес: {eventData.IpAddress}";
-
-        _telegramBot!.SendMessage(message);
-        LogMessage($"Отправлено уведомление о RDP входе: {eventData.UserName} с IP: {eventData.IpAddress}");
-    }
-    catch (Exception ex)
-    {
-        LogMessage($"Ошибка обработки события RDP: {ex.Message}");
-    }
-}
         {
             try
             {
-                string eventSignature = $"{entry.TimeGenerated:yyyyMMddHHmm}_{entry.InstanceId}_{entry.Index}";
+                // Улучшенная сигнатура для дедупликации - используем время с точностью до секунды
+                string eventSignature = $"{entry.TimeGenerated:yyyyMMddHHmmss}_{entry.InstanceId}";
                 
                 if (_processedEvents!.Contains(eventSignature))
                     return;
 
                 _processedEvents.Add(eventSignature);
 
+                // Извлекаем данные через EventData
+                var eventData = Models.EventData.FromEventLogEntry(entry);
+                
+                // Логируем детали события для отладки
+                LogMessage($"Обработка события: User={eventData.UserName}, Workstation={eventData.Workstation}, IP={eventData.IpAddress}");
+                
                 string message = $"🔐 Новый RDP вход:\n" +
-                               $"🕐 Время: {entry.TimeGenerated:dd.MM.yyyy HH:mm:ss}\n" +
-                               $"👤 Пользователь: {ExtractUserName(entry)}\n" +
-                               $"💻 Компьютер: {ExtractComputerName(entry)}\n" +
-                               $"📍 IP адрес: {ExtractIpAddress(entry)}";
+                               $"🕐 Время: {eventData.Time:dd.MM.yyyy HH:mm:ss}\n" +
+                               $"👤 Пользователь: {eventData.UserName}\n" +
+                               $"💻 Компьютер: {eventData.Workstation}\n" +
+                               $"📍 IP адрес: {eventData.IpAddress}";
 
                 _telegramBot!.SendMessage(message);
-                LogMessage($"Отправлено уведомление о RDP входе: {ExtractUserName(entry)}");
+                LogMessage($"Отправлено уведомление о RDP входе: {eventData.UserName} с IP: {eventData.IpAddress}");
             }
             catch (Exception ex)
             {
@@ -131,15 +110,14 @@ namespace RdpMonitor
         {
             try
             {
-                var cutoffTime = DateTime.Now.AddHours(-24);
+                var cutoffTime = DateTime.Now.AddHours(-1); // Уменьшим до 1 часа для тестирования
                 
-                // Исправленная версия TryParse - убраны лишние параметры
                 _processedEvents!.RemoveWhere(eventId => 
                 {
                     if (eventId.Split('_').Length > 0)
                     {
                         string datePart = eventId.Split('_')[0];
-                        if (DateTime.TryParseExact(datePart, "yyyyMMddHHmm", 
+                        if (DateTime.TryParseExact(datePart, "yyyyMMddHHmmss", 
                             null, System.Globalization.DateTimeStyles.None, out DateTime eventTime))
                         {
                             return eventTime < cutoffTime;

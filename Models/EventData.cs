@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Text.RegularExpressions; //
 
 namespace RdpMonitor.Models
 {
@@ -119,27 +120,27 @@ namespace RdpMonitor.Models
         }
 
         private static string FindIpAddressInText(string text)
+{
+    try
+    {
+        // Ищем IPv4 адрес в тексте
+        var ipMatch = Regex.Match(
+            text, 
+            @"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
+        );
+        
+        if (ipMatch.Success && ipMatch.Value != "0.0.0.0")
         {
-            try
-            {
-                // Ищем IPv4 адрес в тексте
-                var ipMatch = System.Text.RegularExpressions.Regex.Match(
-                    text, 
-                    @"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
-                );
-                
-                if (ipMatch.Success && ipMatch.Value != "0.0.0.0")
-                {
-                    return ipMatch.Value;
-                }
-            }
-            catch
-            {
-                // Игнорируем ошибки
-            }
-            
-            return "N/A";
+            return ipMatch.Value;
         }
+    }
+    catch
+    {
+        // Игнорируем ошибки
+    }
+    
+    return "N/A";
+}
 
         public override string ToString()
         {

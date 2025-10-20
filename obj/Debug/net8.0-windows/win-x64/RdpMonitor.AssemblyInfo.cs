@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RdpMonitor")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c246e1123511bd8eaa85dbef2da1b8cf14f6407a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a0b7bde89e6528c8ded2fdb740d30de5a5593d3b")]
 [assembly: System.Reflection.AssemblyProductAttribute("RdpMonitor")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RdpMonitor")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
