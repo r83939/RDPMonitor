@@ -20,14 +20,12 @@ namespace RdpMonitor
             {
                 LogMessage("Инициализация RDP монитора...");
                 
-                // Загрузка конфигурации
                 Config config = Config.Load();
                 _telegramBot = new TelegramBot(config.BotToken, config.ChatId);
                 
                 _processedEvents = new HashSet<string>();
                 _eventLogMonitor = new EventLogMonitor("Security");
                 
-                // Настройка обработчика событий
                 _eventLogMonitor.OnEventLogged += (entry) =>
                 {
                     if (entry.InstanceId == 4624L) // RDP вход
@@ -36,7 +34,6 @@ namespace RdpMonitor
                     }
                 };
 
-                // Таймер для очистки старых событий (каждые 30 минут)
                 _cleanupTimer = new Timer(CleanupProcessedEvents, null, 
                     TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(30));
 
@@ -106,7 +103,6 @@ namespace RdpMonitor
         {
             try
             {
-                // Оставляем только события за последние 24 часа
                 var cutoffTime = DateTime.Now.AddHours(-24);
                 _processedEvents.RemoveWhere(eventId => 
                     DateTime.TryParse(eventId.Split('_')[0], "yyyyMMddHHmm", null, 
@@ -121,9 +117,55 @@ namespace RdpMonitor
             }
         }
 
-        private string ExtractUserName(EventLogEntry entry) => "N/A";
-        private string ExtractComputerName(EventLogEntry entry) => "N/A"; 
-        private string ExtractIpAddress(EventLogEntry entry) => "N/A";
+        private string ExtractUserName(EventLogEntry entry)
+        {
+            try
+            {
+                // Парсим имя пользователя из сообщения события
+                string[] parts = entry.Message.Split('\n');
+                foreach (string part in parts)
+                {
+                    if (part.Contains("Имя пользователя:") || part.Contains("User Name:"))
+                        return part.Split(':')[1].Trim();
+                }
+                return "N/A";
+            }
+            catch
+            {
+                return "N/A";
+            }
+        }
+
+        private string ExtractComputerName(EventLogEntry entry)
+        {
+            try
+            {
+                return entry.MachineName;
+            }
+            catch
+            {
+                return "N/A";
+            }
+        }
+
+        private string ExtractIpAddress(EventLogEntry entry)
+        {
+            try
+            {
+                // Парсим IP адрес из сообщения события
+                string[] parts = entry.Message.Split('\n');
+                foreach (string part in parts)
+                {
+                    if (part.Contains("Адрес сети:") || part.Contains("Network Address:"))
+                        return part.Split(':')[1].Trim();
+                }
+                return "N/A";
+            }
+            catch
+            {
+                return "N/A";
+            }
+        }
 
         public static void LogMessage(string message)
         {
