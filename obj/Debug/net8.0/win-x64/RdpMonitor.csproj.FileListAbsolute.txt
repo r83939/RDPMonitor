@@ -1,0 +1,6 @@
+E:\rdpmonitor\RDPMonitor\obj\Debug\net8.0\win-x64\RdpMonitor.csproj.AssemblyReference.cache
+E:\rdpmonitor\RDPMonitor\obj\Debug\net8.0\win-x64\RdpMonitor.GeneratedMSBuildEditorConfig.editorconfig
+E:\rdpmonitor\RDPMonitor\obj\Debug\net8.0\win-x64\RdpMonitor.AssemblyInfoInputs.cache
+E:\rdpmonitor\RDPMonitor\obj\Debug\net8.0\win-x64\RdpMonitor.AssemblyInfo.cs
+E:\rdpmonitor\RDPMonitor\obj\Debug\net8.0\win-x64\RdpMonitor.csproj.CoreCompileInputs.cache
+E:\rdpmonitor\RDPMonitor\obj\Debug\net8.0\win-x64\RdpMonitor.sourcelink.json
