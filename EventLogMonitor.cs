@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Threading;
 
 namespace RdpMonitor
 {
@@ -8,9 +7,9 @@ namespace RdpMonitor
     {
         private readonly string _logName;
         private bool _isMonitoring;
-        private EventLog _eventLog;
+        private EventLog? _eventLog;
 
-        public event Action<EventLogEntry> OnEventLogged;
+        public event Action<EventLogEntry>? OnEventLogged;
 
         public EventLogMonitor(string logName)
         {
@@ -43,9 +42,12 @@ namespace RdpMonitor
 
             try
             {
-                _eventLog.EntryWritten -= OnEntryWritten;
-                _eventLog.EnableRaisingEvents = false;
-                _eventLog.Dispose();
+                if (_eventLog != null)
+                {
+                    _eventLog.EntryWritten -= OnEntryWritten;
+                    _eventLog.EnableRaisingEvents = false;
+                    _eventLog.Dispose();
+                }
                 _eventLog = null;
                 _isMonitoring = false;
                 

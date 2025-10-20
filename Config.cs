@@ -6,8 +6,8 @@ namespace RdpMonitor
 {
     public class Config
     {
-        public string BotToken { get; set; }
-        public string ChatId { get; set; }
+        public string BotToken { get; set; } = string.Empty;
+        public string ChatId { get; set; } = string.Empty;
 
         public static Config Load()
         {
@@ -32,7 +32,7 @@ namespace RdpMonitor
                 }
 
                 string jsonContent = File.ReadAllText(configFile);
-                return JsonSerializer.Deserialize<Config>(jsonContent);
+                return JsonSerializer.Deserialize<Config>(jsonContent) ?? new Config();
             }
             catch (Exception ex)
             {

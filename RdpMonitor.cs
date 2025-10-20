@@ -9,10 +9,10 @@ namespace RdpMonitor
     public class RdpMonitor
     {
         private bool _isMonitoring;
-        private EventLogMonitor _eventLogMonitor;
-        private TelegramBot _telegramBot;
-        private HashSet<string> _processedEvents;
-        private Timer _cleanupTimer;
+        private EventLogMonitor? _eventLogMonitor;
+        private TelegramBot? _telegramBot;
+        private HashSet<string>? _processedEvents;
+        private Timer? _cleanupTimer;
 
         public void Initialize()
         {
@@ -34,7 +34,7 @@ namespace RdpMonitor
                     }
                 };
 
-                _cleanupTimer = new Timer(CleanupProcessedEvents, null, 
+                _cleanupTimer = new Timer(CleanupProcessedEvents!, null, 
                     TimeSpan.FromMinutes(30), TimeSpan.FromMinutes(30));
 
                 LogMessage("RDP монитор инициализирован успешно");
@@ -79,7 +79,7 @@ namespace RdpMonitor
             {
                 string eventSignature = $"{entry.TimeGenerated:yyyyMMddHHmm}_{entry.InstanceId}_{entry.Index}";
                 
-                if (_processedEvents.Contains(eventSignature))
+                if (_processedEvents!.Contains(eventSignature))
                     return;
 
                 _processedEvents.Add(eventSignature);
@@ -90,7 +90,7 @@ namespace RdpMonitor
                                $"💻 Компьютер: {ExtractComputerName(entry)}\n" +
                                $"📍 IP адрес: {ExtractIpAddress(entry)}";
 
-                _telegramBot.SendMessage(message);
+                _telegramBot!.SendMessage(message);
                 LogMessage($"Отправлено уведомление о RDP входе: {ExtractUserName(entry)}");
             }
             catch (Exception ex)
@@ -99,15 +99,26 @@ namespace RdpMonitor
             }
         }
 
-        private void CleanupProcessedEvents(object state)
+        private void CleanupProcessedEvents(object? state)
         {
             try
             {
                 var cutoffTime = DateTime.Now.AddHours(-24);
-                _processedEvents.RemoveWhere(eventId => 
-                    DateTime.TryParse(eventId.Split('_')[0], "yyyyMMddHHmm", null, 
-                    System.Globalization.DateTimeStyles.None, out DateTime eventTime) && 
-                    eventTime < cutoffTime);
+                
+                // Исправленная версия TryParse - убраны лишние параметры
+                _processedEvents!.RemoveWhere(eventId => 
+                {
+                    if (eventId.Split('_').Length > 0)
+                    {
+                        string datePart = eventId.Split('_')[0];
+                        if (DateTime.TryParseExact(datePart, "yyyyMMddHHmm", 
+                            null, System.Globalization.DateTimeStyles.None, out DateTime eventTime))
+                        {
+                            return eventTime < cutoffTime;
+                        }
+                    }
+                    return false;
+                });
                 
                 LogMessage($"Очистка обработанных событий завершена. Осталось: {_processedEvents.Count}");
             }
